@@ -9,34 +9,57 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = '__all__'
 
+
 class QuizSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
+
     class Meta:
         model = Quiz
         fields = '__all__'
+
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = ['question', 'selected_option']
 
+
 class QuizAttemptSerializer(serializers.ModelSerializer):
     answers = AnswerSerializer(many=True)
 
     class Meta:
         model = QuizAttempt
-        fields = ['quiz','score','answers']
+        fields = ['quiz', 'score', 'answers']
+        read_only_fields = ['score']   # user should not submit score manually
 
     def create(self, validated_data):
+        request = self.context['request']  # get user from request
         answers_data = validated_data.pop('answers')
-        attempt = QuizAttempt.objects.create(**validated_data)
+        quiz = validated_data['quiz']
+
+        # create attempt for the current user
+        attempt = QuizAttempt.objects.create(
+            user=request.user,
+            quiz=quiz,
+            score=0
+        )
+
         score = 0
         for answer_data in answers_data:
-            question = answer_data['question']
+            question_id = answer_data['question'].id if isinstance(answer_data['question'], Question) else answer_data['question']
+            question = Question.objects.get(id=question_id)
+
             selected_option = answer_data['selected_option']
-            Answer.objects.create(attempt=attempt, question=question, selected_option=selected_option)
+
+            Answer.objects.create(
+                attempt=attempt,
+                question=question,
+                selected_option=selected_option
+            )
+
             if question.correct_option == selected_option:
                 score += 1
+
         attempt.score = score
         attempt.save()
         return attempt

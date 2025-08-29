@@ -27,3 +27,8 @@ class QuizDetailView(generics.RetrieveAPIView):
 class TakeQuizView(generics.CreateAPIView):
     serializer_class = QuizAttemptSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        quiz_id = self.kwargs['pk']  # get quiz ID from URL
+        quiz = Quiz.objects.get(pk=quiz_id)
+        serializer.save(user=self.request.user, quiz=quiz)
