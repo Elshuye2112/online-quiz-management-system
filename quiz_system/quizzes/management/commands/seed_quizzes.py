@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from quizzes.models import Quiz, Question
-
+from quizzes.models import QuizAttempt, Answer
+from random import randint
 User = get_user_model()
 
 class Command(BaseCommand):
@@ -12,7 +13,8 @@ class Command(BaseCommand):
         if not admin_user:
             self.stdout.write(self.style.ERROR("No superuser found. Create one first."))
             return
-
+        # Get or create a sample user for quiz attempts
+        user, _ = User.objects.get_or_create(username="sampleuser", defaults={"password":"samplepassword"})
         quizzes_data = [
             {
                 "title": "General Knowledge Quiz",
@@ -98,3 +100,22 @@ class Command(BaseCommand):
                 )
                 if q_created:
                     self.stdout.write(self.style.SUCCESS(f"Added question: {question.text}"))
+            # Assume `user` is the sample user created earlier
+            attempt, created = QuizAttempt.objects.get_or_create(
+                user=user,
+                quiz=quiz
+            )
+            if created:
+                for question in quiz.questions.all():
+                    Answer.objects.create(
+                        attempt=attempt,
+                        question=question,
+                        selected_option=question.correct_option  # perfect score
+                    )
+                attempt.calculate_score()
+                self.stdout.write(self.style.SUCCESS(
+                    f"Quiz attempt created for {user.username} on '{quiz.title}' with score {attempt.score}"
+                ))
+
+       
+    
