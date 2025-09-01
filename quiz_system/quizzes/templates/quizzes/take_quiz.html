@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+{% extends "base.html" %}
+{% block content %}
+  <h1>Take Quiz: {{ quiz.title }}</h1>
+
+  <form method="post">
+    {% csrf_token %}
+    {% for question in quiz.questions.all %}
+      <div>
+        <p><b>{{ question.text }}</b></p>
+        {% for option in question.get_options %}
+          <label>
+            <input type="radio" name="question_{{ question.id }}" value="{{ option }}">
+            {{ option }}
+          </label><br>
+        {% endfor %}
+      </div>
+    {% endfor %}
+    <button type="submit">Submit</button>
+  </form>
+{% endblock %}

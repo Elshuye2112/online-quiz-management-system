@@ -29,13 +29,14 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizAttempt
-        fields = ['quiz', 'score', 'answers']
+        fields = ['score', 'answers']
         read_only_fields = ['score']   # user should not submit score manually
 
     def create(self, validated_data):
         request = self.context['request']  # get user from request
+        quiz=self.context('quiz')
         answers_data = validated_data.pop('answers')
-        quiz = validated_data['quiz']
+        # quiz = validated_data['quiz']
 
         # create attempt for the current user
         attempt = QuizAttempt.objects.create(
